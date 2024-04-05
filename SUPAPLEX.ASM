@@ -409,7 +409,7 @@ leaveVideoStatus:           ; CODE XREF: start+28Aj
         call    sub_4D517
         call    sub_4D4E4
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         call    readTitleDatAndGraphics?
         mov si, 5F15h
         call    fade
@@ -2084,7 +2084,7 @@ loc_4792E:              ; CODE XREF: loadScreen2+76j
         call    videoloop
         mov byte_510A6, 0
         mov si, 5F95h
-        call    sub_4D836
+        call    loadPalette
         mov ax, 3D00h
         mov dx, 3767h
         int 21h     ; DOS - 2+ - OPEN DISK FILE WITH HANDLE
@@ -3144,7 +3144,7 @@ sub_47F39   proc near       ; CODE XREF: readPallettes+Fp
                     ; readMoving+15p ...
         call    enableFloppy?
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         call    vgaloadbackseg
         cmp byte_53A10, 1
         jnz short loc_47F56
@@ -3162,7 +3162,7 @@ loc_47F5E:              ; CODE XREF: sub_47F39+1Bj
         mov ah, 0Fh
         call    sub_4BDF0
         mov si, 5FD5h
-        call    sub_4D836
+        call    loadPalette
         mov bx, 4D84h
         mov dx, 3D4h
         mov al, 0Dh
@@ -3181,7 +3181,7 @@ loc_47F5E:              ; CODE XREF: sub_47F39+1Bj
         call    sub_47E98
         pushf
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         popf
         retn
 sub_47F39   endp
@@ -7091,7 +7091,7 @@ loc_49B84:              ; CODE XREF: sub_4955B+619j
         call    getTime
         call    sub_4A1AE
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         call    sub_48F6D
         call    sub_501C0
         call    sub_4A2E6
@@ -13165,7 +13165,7 @@ sub_4C4BD   endp
 
 sub_4C4F9   proc near       ; CODE XREF: sub_4C407+11p
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         call    vgaloadbackseg
         mov si, 8577h
         mov di, 6A2Ch
@@ -13225,14 +13225,14 @@ loc_4C55C:              ; CODE XREF: sub_4C4F9+31j
         out dx, al      ; Video: CRT controller internal registers
         call    videoloop
         mov si, 5FD5h
-        call    sub_4D836
+        call    loadPalette
         cmp word_5197A, 1
         jz  short loc_4C591
         call    sub_47E98
 
 loc_4C591:              ; CODE XREF: sub_4C4F9+93j
         mov si, 60D5h
-        call    sub_4D836
+        call    loadPalette
         mov bx, 4D5Ch
         mov dx, 3D4h
         mov al, 0Dh
@@ -13921,7 +13921,7 @@ showControls:                              ; DATA XREF: data:0044o
                 call    sub_4CC7C
                 call    sub_4CCDF
                 mov     si, 6055h
-                call    sub_4D836
+                call    loadPalette
                 call    sub_4C5AF  ; DO SLIDE
                 mov     word_58463, 0
                 call    sub_4B85C
@@ -13992,7 +13992,7 @@ loc_4CAEC:                              ; CODE XREF: code:5E74j
                 call    loc_4C44F
                 call    sub_4C2F2
                 mov     si, 6015h
-                call    sub_4D836
+                call    loadPalette
                 retn
 
 ; =============== S U B R O U T I N E =======================================
@@ -16045,7 +16045,7 @@ var_2       = word ptr -2
         push    es
         cmp videoStatusUnk, 2
         jnz short loc_4D706
-        call    sub_4D836
+        call    loadPalette
         pop es
         mov sp, bp
         pop bp
@@ -16205,7 +16205,7 @@ isFastMode4:              ; CODE XREF: fade+11Dj
 
 loc_4D827:              ; CODE XREF: fade+132j
         pop si
-        call    sub_4D836
+        call    loadPalette
         mov ax, [bp+var_8]
         mov word_510A2, ax
         pop es
@@ -16220,10 +16220,10 @@ fade        endp
 
 ; Attributes: bp-based frame
 
-sub_4D836   proc near       ; CODE XREF: start+2B8p
+loadPalette   proc near       ; CODE XREF: start+2B8p
                     ; loadScreen2+B5p ...
 
-var_2       = word ptr -2
+var_2       = word ptr -2 ; temp for word_510A2
 
         push    bp
         mov bp, sp
@@ -16233,13 +16233,14 @@ var_2       = word ptr -2
         mov word_510A2, 0
         cmp videoStatusUnk, 1
         jnz short loc_4D872
-        mov cx, 10h
-        mov dx, 3C8h
+        mov cx, 10h  ; number of colors: 16
+        mov dx, 3C8h ; 0 -> PEL Address register
         mov al, 0
         out dx, al
-        mov dx, 3C9h
+        mov dx, 3C9h ; PEL data register
 
-loc_4D85B:              ; CODE XREF: sub_4D836+38j
+; read colors at ds:di into the PEL data register
+loadPaletteColorsLoop:              ; CODE XREF: loadPalette+38j
         lodsb
         shl al, 1
         shl al, 1
@@ -16253,16 +16254,16 @@ loc_4D85B:              ; CODE XREF: sub_4D836+38j
         shl al, 1
         out dx, al
         lodsb
-        loop    loc_4D85B
-        jmp short loc_4D89E
+        loop    loadPaletteColorsLoop
+        jmp short loadPaletteDone
 ; ---------------------------------------------------------------------------
 
-loc_4D872:              ; CODE XREF: sub_4D836+17j
+loc_4D872:              ; CODE XREF: loadPalette+17j
         mov cx, 10h
         mov dx, 0
         mov di, 611h
 
-loc_4D87B:              ; CODE XREF: sub_4D836+58j
+loc_4D87B:              ; CODE XREF: loadPalette+58j
         lodsb
         lodsb
         lodsb
@@ -16287,13 +16288,13 @@ loc_4D87B:              ; CODE XREF: sub_4D836+58j
         pop es
         assume es:nothing
 
-loc_4D89E:              ; CODE XREF: sub_4D836+3Aj
-        mov ax, [bp+var_2]
+loadPaletteDone:              ; CODE XREF: loadPalette+3Aj
+        mov ax, [bp+var_2]  ; restore word_510A2
         mov word_510A2, ax
         mov sp, bp
         pop bp
         retn
-sub_4D836   endp
+loadPalette   endp
 
 ; ---------------------------------------------------------------------------
         db  2Eh ; .
