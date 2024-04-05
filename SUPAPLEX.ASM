@@ -1757,20 +1757,20 @@ readPallettes   proc near       ; CODE XREF: readEverythingp
                     ; DS:DX -> ASCIZ filename
                     ; AL = access mode
                     ; 0 - read
-        jnb short loc_4779F
+        jnb short palettesReadSuccess
         cmp ax, 2
-        jnz short loc_4779C
+        jnz short palettesReadFailed
         call    sub_47F39
-        jb  short loc_4779C
-        jmp short loc_4779F
+        jb  short palettesReadFailed
+        jmp short palettesReadSuccess
 ; ---------------------------------------------------------------------------
 
-loc_4779C:              ; CODE XREF: readPallettes+Dj
+palettesReadFailed:              ; CODE XREF: readPallettes+Dj
                     ; readPallettes+12j
         jmp exit
 ; ---------------------------------------------------------------------------
 
-loc_4779F:              ; CODE XREF: readPallettes+8j
+palettesReadSuccess:              ; CODE XREF: readPallettes+8j
                     ; readPallettes+14j
         mov lastFileHandle, ax
         mov bx, lastFileHandle
@@ -1780,11 +1780,11 @@ loc_4779F:              ; CODE XREF: readPallettes+8j
         int 21h     ; DOS - 2+ - READ FROM FILE WITH HANDLE
                     ; BX = file handle, CX = number of bytes to read
                     ; DS:DX -> buffer
-        jnb short loc_477B6
+        jnb short palettesReadDone
         jmp exit
 ; ---------------------------------------------------------------------------
 
-loc_477B6:              ; CODE XREF: readPallettes+2Bj
+palettesReadDone:              ; CODE XREF: readPallettes+2Bj
         mov ax, 3E00h
         mov bx, lastFileHandle
         int 21h     ; DOS - 2+ - CLOSE A FILE WITH HANDLE
